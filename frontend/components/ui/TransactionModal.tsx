@@ -131,7 +131,7 @@ export function TransactionModal({ isOpen, onClose, defaultType = 'expense', onS
     if (formData.amount && formData.description) {
       try {
         // Call API to create transaction
-        await api.transactions.create({
+        const response = await api.transactions.create({
           type: formData.type.toUpperCase(),
           amount: parseFloat(formData.amount),
           description: formData.description,
@@ -141,7 +141,7 @@ export function TransactionModal({ isOpen, onClose, defaultType = 'expense', onS
         });
 
         alert('Transaction created successfully!');
-        onSave?.();
+        onSave?.(response.data);
         onClose();
         resetForm();
       } catch (error) {

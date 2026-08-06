@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/lib/store/auth.store';
-import { api } from '@/lib/api-client';
+import { api, apiClient } from '@/lib/api-client';
 
 export interface Transaction {
   id: number;
@@ -77,3 +78,38 @@ export function useTransactions(
 
   return { transactions, loading, error };
 }
+
+export interface CreateTransactionData {
+  description: string;
+  amount: number;
+  date: string;
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER';
+  accountId: string;
+  categoryId: string;
+  toAccountId?: string; // For transfers
+}
+
+// Create transaction using React Query
+export const useCreateTransaction = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateTransactionData) => {
+      const response = await apiClient.post('/api/transactions', {
+        description: data.description,
+        amount: data.amount,
+        transactionDate: data.date,
+        type: data.type,
+        accountId: parseInt(data.accountId),
+        categoryId: parseInt(data.categoryId),
+        toAccountId: data.toAccountId ? parseInt(data.toAccountId) : undefined,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      // Invalidate and refetch transactions
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+    },
+  });
+};
