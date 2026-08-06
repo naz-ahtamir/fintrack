@@ -1,0 +1,593 @@
+// ============================================================================
+// PERSONAL FINANCE MANAGEMENT SYSTEM - PRISMA SCHEMA
+// Production-ready dengan best practices, proper relationships, dan indexing
+// ============================================================================
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// ENUMS - Tipe-tipe yang tidak berubah
+// ============================================================================
+
+/// Role user dalam sistem
+enum UserRole {
+  USER /// User biasa
+  ADMIN /// Admin sistem
+  MODERATOR /// Moderator (opsional untuk fitur2 khusus)
+}
+
+/// Tipe akun finansial
+enum AccountTypeName {
+  CASH /// Uang tunai
+  BANK /// Akun bank
+  EWALLET /// E-wallet (Dana, OVO, GoPay, dll)
+  CREDIT_CARD /// Kartu kredit
+  INVESTMENT /// Investasi (saham, crypto, dll)
+}
+
+/// Tipe kategori (income atau expense)
+enum CategoryType {
+  INCOME /// Pemasukan (gaji, bonus, dll)
+  EXPENSE /// Pengeluaran (makan, transportasi, dll)
+}
+
+/// Tipe transaksi
+enum TransactionType {
+  INCOME /// Uang masuk
+  EXPENSE /// Uang keluar
+  TRANSFER /// Transfer antar akun
+}
+
+/// Status goal finansial
+enum GoalStatus {
+  ACTIVE /// Goal sedang berjalan
+  COMPLETED /// Goal sudah tercapai
+  CANCELLED /// Goal dibatalkan
+}
+
+/// Tipe pengulangan transaksi (recurring)
+enum RecurrenceType {
+  ONCE /// Transaksi sekali saja (default)
+  DAILY /// Setiap hari
+  WEEKLY /// Setiap minggu
+  BIWEEKLY /// Setiap 2 minggu
+  MONTHLY /// Setiap bulan
+  QUARTERLY /// Setiap 3 bulan
+  YEARLY /// Setiap tahun
+}
+
+/// Frekuensi notifikasi
+enum NotificationFrequency {
+  IMMEDIATE /// Segera
+  DAILY /// Setiap hari
+  WEEKLY /// Setiap minggu
+  NEVER /// Tidak ada notifikasi
+}
+
+// ============================================================================
+// MODEL USER & AUTHENTICATION
+// ============================================================================
+
+/// User - Model utama untuk pengguna sistem
+model User {
+  id Int @id @default(autoincrement())
+
+  // Profile
+  name     String   @db.VarChar(100)
+  email    String   @unique @db.VarChar(100)
+  password String   @db.VarChar(255)
+  role     UserRole @default(USER)
+
+  // Status
+  isActive      Boolean @default(true) @map("is_active")
+  emailVerified Boolean @default(false) @map("email_verified")
+
+  // Soft delete
+  deletedAt DateTime? @map("deleted_at")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  accounts         Account[]
+  categories       Category[]
+  transactions     Transaction[]
+  budgets          Budget[]
+  budgetAlerts     BudgetAlert[]
+  goals            Goal[]
+  goalTransactions GoalTransaction[]
+  settings         UserSetting?
+  activityLogs     ActivityLog[]
+  notifications    Notification[]
+
+  @@index([email])
+  @@index([isActive])
+  @@index([createdAt])
+  @@map("users")
+}
+
+// ============================================================================
+// MODEL SETTINGS & PREFERENCES
+// ============================================================================
+
+/// UserSetting - Preferensi dan konfigurasi user
+model UserSetting {
+  id Int @id @default(autoincrement())
+
+  userId Int @unique @map("user_id")
+
+  // Localization
+  currency   String @default("IDR") @db.VarChar(10)
+  language   String @default("id") @db.VarChar(10)
+  timeZone   String @default("Asia/Jakarta") @db.VarChar(50)
+  dateFormat String @default("DD/MM/YYYY") @db.VarChar(20)
+
+  // UI Preferences
+  theme         String @default("light") @db.VarChar(20)
+  decimalPlaces Int    @default(2)
+
+  // Notification Preferences
+  budgetNotification      NotificationFrequency @default(WEEKLY) @map("budget_notification")
+  transactionNotification Boolean               @default(true) @map("transaction_notification")
+  goalNotification        Boolean               @default(true) @map("goal_notification")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+// ============================================================================
+// MODEL ACCOUNT & ACCOUNT TYPE
+// ============================================================================
+
+/// AccountType - Tipe akun yang tersedia di sistem
+model AccountType {
+  id   Int             @id @default(autoincrement())
+  name AccountTypeName @unique
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  accounts Account[]
+
+  @@map("account_types")
+}
+
+/// Account - Akun finansial user (bank, e-wallet, cash, dll)
+model Account {
+  id Int @id @default(autoincrement())
+
+  userId        Int @map("user_id")
+  accountTypeId Int @map("account_type_id")
+
+  // Profile
+  name        String  @db.VarChar(100)
+  description String? @db.Text
+
+  // Financial Data
+  balance  Decimal @default(0) @db.Decimal(19, 4)
+  currency String  @default("IDR") @db.VarChar(10)
+
+  // Status
+  isActive Boolean @default(true) @map("is_active")
+
+  // Reconciliation
+  lastReconciled DateTime? @map("last_reconciled")
+  lastBalance    Decimal?  @map("last_balance") @db.Decimal(19, 4)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountType AccountType @relation(fields: [accountTypeId], references: [id])
+
+  // Transactions relations (support untuk INCOME/EXPENSE dan TRANSFER)
+  transactionsAsMain Transaction[] @relation("MainAccount")
+  transactionsFrom   Transaction[] @relation("FromAccount")
+  transactionsTo     Transaction[] @relation("ToAccount")
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@index([isActive])
+  @@map("accounts")
+}
+
+// ============================================================================
+// MODEL CATEGORY
+// ============================================================================
+
+/// Category - Kategori untuk transaksi (food, transport, salary, dll)
+model Category {
+  id Int @id @default(autoincrement())
+
+  userId Int @map("user_id")
+
+  // Profile
+  name        String       @db.VarChar(100)
+  type        CategoryType
+  description String?      @db.Text
+
+  // UI
+  icon  String? @db.VarChar(100) // emoji atau icon name
+  color String? @db.VarChar(20) // hex color
+
+  // Status
+  isActive  Boolean @default(true) @map("is_active")
+  isDefault Boolean @default(false) @map("is_default")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  budgets      Budget[]
+
+  @@unique([userId, name, type])
+  @@index([userId])
+  @@index([type])
+  @@index([isActive])
+  @@index([isDefault])
+  @@map("categories")
+}
+
+// ============================================================================
+// MODEL TRANSACTION (CORE)
+// ============================================================================
+
+/// Transaction - Transaksi finansial (income, expense, transfer)
+/// 
+/// Logic:
+/// - INCOME: accountId harus ada, amount ditambah ke balance
+/// - EXPENSE: accountId harus ada, amount dikurang dari balance
+/// - TRANSFER: fromAccountId dan toAccountId harus ada, accountId bisa kosong
+model Transaction {
+  id Int @id @default(autoincrement())
+
+  userId Int @map("user_id")
+
+  // Type & Amount
+  type   TransactionType
+  amount Decimal         @db.Decimal(19, 4)
+
+  // Description
+  description String? @db.VarChar(255)
+  notes       String? @db.Text
+
+  // References (Main Account untuk INCOME/EXPENSE)
+  accountId  Int? @map("account_id")
+  categoryId Int? @map("category_id")
+
+  // References (TRANSFER - FROM dan TO)
+  fromAccountId Int? @map("from_account_id")
+  toAccountId   Int? @map("to_account_id")
+
+  // Date info
+  transactionDate DateTime @map("transaction_date")
+
+  // Recurring support
+  recurrenceType      RecurrenceType? @default(ONCE) @map("recurrence_type")
+  recurrenceEndDate   DateTime?       @map("recurrence_end_date")
+  parentTransactionId Int?            @map("parent_transaction_id") // untuk recurring instances
+
+  // Reference ke goal (optional, jika transaksi ini kontribusi ke goal)
+  relatedGoalId Int? @map("related_goal_id")
+
+  // Status
+  isReconciled       Boolean   @default(false) @map("is_reconciled")
+  reconciliationDate DateTime? @map("reconciliation_date")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account     Account?  @relation("MainAccount", fields: [accountId], references: [id], onDelete: SetNull)
+  fromAccount Account?  @relation("FromAccount", fields: [fromAccountId], references: [id], onDelete: SetNull)
+  toAccount   Account?  @relation("ToAccount", fields: [toAccountId], references: [id], onDelete: SetNull)
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  attachments Attachment[]
+
+  @@index([userId])
+  @@index([accountId])
+  @@index([fromAccountId])
+  @@index([toAccountId])
+  @@index([categoryId])
+  @@index([transactionDate])
+  @@index([type])
+  @@index([recurrenceType])
+  @@index([isReconciled])
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+// ============================================================================
+// MODEL BUDGET & BUDGET ALERT
+// ============================================================================
+
+/// Budget - Budget untuk kategori tertentu per bulan
+model Budget {
+  id Int @id @default(autoincrement())
+
+  userId     Int @map("user_id")
+  categoryId Int @map("category_id")
+
+  // Budget amount
+  amount Decimal @db.Decimal(19, 4)
+
+  // Period (month/year)
+  month Int // 1-12
+  year  Int // 2024, 2025, dll
+
+  // Alert threshold (dalam persen, default 80%)
+  alertThreshold Int @default(80) @map("alert_threshold")
+
+  // Status
+  isActive Boolean @default(true) @map("is_active")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  alerts   BudgetAlert[]
+
+  @@unique([userId, categoryId, month, year])
+  @@index([userId])
+  @@index([categoryId])
+  @@index([month])
+  @@index([year])
+  @@index([isActive])
+  @@map("budgets")
+}
+
+/// BudgetAlert - Alert ketika budget sudah mencapai threshold
+model BudgetAlert {
+  id Int @id @default(autoincrement())
+
+  userId   Int @map("user_id")
+  budgetId Int @map("budget_id")
+
+  // Alert info
+  threshold   Int // Persentase yang mencapai alert (mis: 85%)
+  spentAmount Decimal @map("spent_amount") @db.Decimal(19, 4)
+
+  // Status
+  isRead Boolean   @default(false) @map("is_read")
+  readAt DateTime? @map("read_at")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  budget Budget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([budgetId])
+  @@index([isRead])
+  @@map("budget_alerts")
+}
+
+// ============================================================================
+// MODEL GOAL & GOAL TRANSACTION
+// ============================================================================
+
+/// Goal - Goal finansial user (menabung, beli rumah, dll)
+model Goal {
+  id Int @id @default(autoincrement())
+
+  userId Int @map("user_id")
+
+  // Profile
+  title       String  @db.VarChar(100)
+  description String? @db.Text
+  category    String? @db.VarChar(100) // kategori goal (misalnya: "Saving", "Investment")
+
+  // Target
+  targetAmount  Decimal @map("target_amount") @db.Decimal(19, 4)
+  currentAmount Decimal @default(0) @map("current_amount") @db.Decimal(19, 4)
+
+  // Dates
+  startDate  DateTime? @map("start_date")
+  targetDate DateTime? @map("target_date")
+
+  // Status
+  status        GoalStatus @default(ACTIVE)
+  completedDate DateTime?  @map("completed_date")
+
+  // Calculation method
+  isAutoCalculate Boolean @default(true) @map("is_auto_calculate")
+
+  // Priority
+  priority Int @default(0) // untuk sorting
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goalTransactions GoalTransaction[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([targetDate])
+  @@index([createdAt])
+  @@map("goals")
+}
+
+/// GoalTransaction - Transaksi/kontribusi ke goal
+model GoalTransaction {
+  id Int @id @default(autoincrement())
+
+  userId Int @map("user_id")
+  goalId Int @map("goal_id")
+
+  // Amount
+  amount Decimal @db.Decimal(19, 4)
+
+  // Notes
+  notes String? @db.Text
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([goalId])
+  @@index([createdAt])
+  @@map("goal_transactions")
+}
+
+// ============================================================================
+// MODEL ATTACHMENT
+// ============================================================================
+
+/// Attachment - File/dokumen yang terkait dengan transaksi (receipt, invoice, dll)
+model Attachment {
+  id Int @id @default(autoincrement())
+
+  transactionId Int @map("transaction_id")
+
+  // File info
+  fileName String  @map("file_name") @db.VarChar(255)
+  fileUrl  String  @map("file_url") @db.Text
+  fileSize Int?    @map("file_size") // dalam bytes
+  mimeType String? @map("mime_type") @db.VarChar(100)
+
+  // File storage metadata
+  storageKey String? @map("storage_key") @db.VarChar(255) // untuk cloud storage reference
+
+  // Upload info
+  uploadedBy String? @map("uploaded_by") @db.VarChar(100)
+
+  // Status
+  isVerified Boolean @default(false) @map("is_verified")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([transactionId])
+  @@map("attachments")
+}
+
+// ============================================================================
+// MODEL AUDIT & LOGGING
+// ============================================================================
+
+/// ActivityLog - Log semua aktivitas user untuk audit trail
+model ActivityLog {
+  id Int @id @default(autoincrement())
+
+  userId Int @map("user_id")
+
+  // Action info
+  action   String @db.VarChar(100) // CREATE, UPDATE, DELETE, LOGIN, dll
+  entity   String @db.VarChar(100) // Transaction, Account, Budget, dll
+  entityId Int?   @map("entity_id")
+
+  // Changes
+  description String? @db.Text
+  oldValue    String? @map("old_value") @db.Text
+  newValue    String? @map("new_value") @db.Text
+
+  // Request info
+  ipAddress String? @map("ip_address") @db.VarChar(45)
+  userAgent String? @map("user_agent") @db.Text
+
+  // Response
+  statusCode Int @default(200) @map("status_code")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([entity])
+  @@index([action])
+  @@index([createdAt])
+  @@index([entityId])
+  @@map("activity_logs")
+}
+
+// ============================================================================
+// MODEL NOTIFICATION
+// ============================================================================
+
+/// Notification - Notifikasi untuk user
+model Notification {
+  id Int @id @default(autoincrement())
+
+  userId Int @map("user_id")
+
+  // Notification content
+  title   String @db.VarChar(255)
+  message String @db.Text
+  type    String @db.VarChar(50) // budget_alert, goal_milestone, transaction, dll
+
+  // Reference
+  relatedEntityType String? @map("related_entity_type") @db.VarChar(100)
+  relatedEntityId   Int?    @map("related_entity_id")
+
+  // Status
+  isRead Boolean   @default(false) @map("is_read")
+  readAt DateTime? @map("read_at")
+
+  // Action
+  actionUrl String? @map("action_url") @db.Text
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([type])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ============================================================================
+// SEED DATA GENERATOR - Helper untuk development
+// ============================================================================
+
+/// Catatan: Models di atas adalah production-ready schema.
+/// 
+/// Untuk setup awal database, gunakan Prisma seed script.
+/// Buat file prisma/seed.ts dan jalankan dengan: npx prisma db seed
