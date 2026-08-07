@@ -95,23 +95,23 @@ export function AccountModal({ isOpen, onClose, onSave }: AccountModalProps) {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop with Centered Container */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-y-auto"
           >
-            {/* Modal Container - Scrollable */}
-            <div className="h-full overflow-y-auto flex items-center justify-center p-4">
+            {/* Centering Container */}
+            <div className="min-h-full flex items-center justify-center p-4 sm:p-6" onClick={(e) => e.stopPropagation()}>
               {/* Modal */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#0a0a0a] rounded-3xl shadow-2xl w-full max-w-lg border border-[#262626] my-8"
+                className="bg-[#0a0a0a] shadow-2xl w-full max-w-lg border border-[#262626] my-4"
               >
                 {/* Header */}
                 <div className="p-6 border-b border-[#262626] flex items-center justify-between bg-[#0a0a0a] rounded-t-3xl">
