@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Wallet, Receipt, ChevronDown, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
@@ -59,6 +60,7 @@ const categoryIcons: Record<string, string> = {
 
 export function TransactionModal({ isOpen, onClose, defaultType = 'expense', onSave }: TransactionModalProps) {
   const { token } = useAuthStore();
+  const [mounted, setMounted] = useState(false);
   
   const [formData, setFormData] = useState<TransactionFormData>({
     type: defaultType,
@@ -74,6 +76,12 @@ export function TransactionModal({ isOpen, onClose, defaultType = 'expense', onS
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Ensure component is mounted (for portal)
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   // Fetch categories and accounts when modal opens
   useEffect(() => {
@@ -169,17 +177,23 @@ export function TransactionModal({ isOpen, onClose, defaultType = 'expense', onS
   const incomeCategories = categories.filter(c => c.type.toUpperCase() === 'INCOME');
   const expenseCategories = categories.filter(c => c.type.toUpperCase() === 'EXPENSE');
 
-  return (
+  // Don't render on server or if not mounted
+  if (!mounted || typeof window === 'undefined') {
+    return null;
+  }
+
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop with Centered Container */}
+          {/* Backdrop with VERY HIGH z-index */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-y-auto"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm overflow-y-auto"
+            style={{ zIndex: 99999 }}
           >
             {/* Centering Container */}
             <div className="min-h-full flex items-center justify-center p-4 sm:p-6" onClick={(e) => e.stopPropagation()}>
@@ -189,7 +203,7 @@ export function TransactionModal({ isOpen, onClose, defaultType = 'expense', onS
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#0a0a0a] shadow-2xl w-full max-w-lg border border-[#262626] my-4"
+                className="bg-[#0a0a0a] rounded-3xl shadow-2xl w-full max-w-lg border border-[#262626] my-4 relative"
               >
                 {/* Header */}
                 <div className="p-6 border-b border-[#262626] flex items-center justify-between bg-[#0a0a0a] rounded-t-3xl">
@@ -391,4 +405,7 @@ export function TransactionModal({ isOpen, onClose, defaultType = 'expense', onS
       )}
     </AnimatePresence>
   );
+
+  // Render modal in document body portal
+  return createPortal(modalContent, document.body);
 }

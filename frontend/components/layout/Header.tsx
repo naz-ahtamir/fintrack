@@ -2,10 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Bell, Plus, User, Settings as SettingsIcon, LogOut } from 'lucide-react';
+import { Search, Bell, User, Settings as SettingsIcon, LogOut } from 'lucide-react';
 import { cn, getInitials, getAvatarColor } from '@/lib/utils';
-import { Button } from '../ui/Button';
-import { TransactionModal } from '../ui/TransactionModal';
 import { useAuthStore } from '@/lib/store/auth.store';
 
 interface HeaderProps {
@@ -20,7 +18,6 @@ export function Header({ user }: HeaderProps) {
   const { clearAuth } = useAuthStore();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
 
   const handleSignOut = () => {
     clearAuth();
@@ -83,16 +80,6 @@ export function Header({ user }: HeaderProps) {
 
         {/* Right side actions */}
         <div className="flex items-center gap-3">
-          {/* Quick Add Button */}
-          <Button
-            variant="primary"
-            size="sm"
-            leftIcon={<Plus className="w-4 h-4" />}
-            onClick={() => setIsTransactionModalOpen(true)}
-          >
-            New
-          </Button>
-
           {/* Notifications */}
           <div className="relative">
             <button
@@ -207,13 +194,6 @@ export function Header({ user }: HeaderProps) {
           </div>
         </div>
       </div>
-
-      {/* Transaction Modal */}
-      <TransactionModal
-        isOpen={isTransactionModalOpen}
-        onClose={() => setIsTransactionModalOpen(false)}
-        defaultType="expense"
-      />
     </header>
   );
 }

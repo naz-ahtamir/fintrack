@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Wallet, Building, CreditCard, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -31,6 +32,7 @@ const accountTypes = [
 ];
 
 export function AccountModal({ isOpen, onClose, onSave }: AccountModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [formData, setFormData] = useState<AccountFormData>({
     name: '',
     type: 'BANK',
@@ -41,6 +43,12 @@ export function AccountModal({ isOpen, onClose, onSave }: AccountModalProps) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Ensure component is mounted (for portal)
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,17 +99,23 @@ export function AccountModal({ isOpen, onClose, onSave }: AccountModalProps) {
 
   const selectedAccountType = accountTypes.find(t => t.value === formData.type);
 
-  return (
+  // Don't render on server or if not mounted
+  if (!mounted || typeof window === 'undefined') {
+    return null;
+  }
+
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop with Centered Container */}
+          {/* Backdrop with VERY HIGH z-index */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-y-auto"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm overflow-y-auto"
+            style={{ zIndex: 99999 }}
           >
             {/* Centering Container */}
             <div className="min-h-full flex items-center justify-center p-4 sm:p-6" onClick={(e) => e.stopPropagation()}>
@@ -111,7 +125,7 @@ export function AccountModal({ isOpen, onClose, onSave }: AccountModalProps) {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#0a0a0a] shadow-2xl w-full max-w-lg border border-[#262626] my-4"
+                className="bg-[#0a0a0a] rounded-3xl shadow-2xl w-full max-w-lg border border-[#262626] my-4 relative"
               >
                 {/* Header */}
                 <div className="p-6 border-b border-[#262626] flex items-center justify-between bg-[#0a0a0a] rounded-t-3xl">
@@ -279,4 +293,7 @@ export function AccountModal({ isOpen, onClose, onSave }: AccountModalProps) {
       )}
     </AnimatePresence>
   );
+
+  // Render modal in document body portal
+  return createPortal(modalContent, document.body);
 }
