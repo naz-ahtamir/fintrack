@@ -12,18 +12,44 @@ async function bootstrap() {
   app.use(helmet());
 
   // ========== CORS ==========
+  const allowedOrigins = [
+    // Development
+    'http://localhost:3000',
+    'http://localhost:3001',
+    
+    // Production - Custom Domain (recommended)
+    process.env.FRONTEND_URL, // Set di Render: https://fintrack.com
+    
+    // Production - Vercel Production URL (permanent)
+    'https://fintrack-naz-ahtamirs-projects.vercel.app', // URL ini permanen
+  ].filter(Boolean);
+
+  // Allow Vercel preview deployments untuk testing
+  const isVercelPreview = (origin: string) => {
+    return origin.match(/^https:\/\/fintrack-[a-z0-9]+-naz-ahtamirs-projects\.vercel\.app$/);
+  };
+
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, etc)
+      if (!origin) {
+        return callback(null, true);
+      }
 
-      // URL Frontend Production (Vercel)
-      'https://fintrack-d0ef5gapa-naz-ahtamirs-projects.vercel.app',
+      // Check if origin is in allowed list
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
 
-      // Jika nanti ganti domain cukup ubah Environment Variable
-      process.env.FRONTEND_URL,
-    ].filter(Boolean),
+      // Allow Vercel preview deployments (for testing new features)
+      if (process.env.NODE_ENV !== 'production' && isVercelPreview(origin)) {
+        return callback(null, true);
+      }
 
+      // Reject other origins
+      console.warn(`CORS blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
@@ -31,7 +57,10 @@ async function bootstrap() {
       'Authorization',
       'Accept',
       'Origin',
+      'X-Requested-With',
     ],
+    exposedHeaders: ['Content-Length', 'Content-Type'],
+    maxAge: 86400, // 24 hours
   });
 
   // ========== VALIDATION ==========
