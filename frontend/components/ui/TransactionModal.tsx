@@ -179,25 +179,27 @@ export function TransactionModal({ isOpen, onClose, defaultType = 'expense', onS
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
           >
-            {/* Modal */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-[#0a0a0a] rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-[#262626]"
-            >
-              {/* Header */}
-              <div className="p-6 border-b border-[#262626] flex items-center justify-between sticky top-0 bg-[#0a0a0a] z-10">
-                <div>
-                  <h3 className="text-xl font-bold font-mono text-[#0066ff]">
-                    Add Transaction
-                  </h3>
-                  <p className="text-sm text-zinc-400">
-                    Record a new financial transaction
-                  </p>
+            {/* Modal Container - Scrollable */}
+            <div className="h-full overflow-y-auto flex items-center justify-center p-4">
+              {/* Modal */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-[#0a0a0a] rounded-3xl shadow-2xl w-full max-w-lg border border-[#262626] my-8"
+              >
+                {/* Header */}
+                <div className="p-6 border-b border-[#262626] flex items-center justify-between bg-[#0a0a0a] rounded-t-3xl">
+                  <div>
+                    <h3 className="text-xl font-bold font-mono text-[#0066ff]">
+                      Add Transaction
+                    </h3>
+                    <p className="text-sm text-zinc-400">
+                      Record a new financial transaction
+                    </p>
                 </div>
                 <button
                   onClick={onClose}
@@ -383,6 +385,7 @@ export function TransactionModal({ isOpen, onClose, defaultType = 'expense', onS
                 </Button>
               </form>
             </motion.div>
+            </div>
           </motion.div>
         </>
       )}

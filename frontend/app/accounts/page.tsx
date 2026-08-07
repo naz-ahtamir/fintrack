@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { AccountModal } from '@/components/ui/AccountModal';
 import { Plus, Wallet, CreditCard, Building, PiggyBank, TrendingUp, MoreVertical } from 'lucide-react';
 import { formatCurrency, cn } from '@/lib/utils';
 import { api } from '@/lib/api-client';
@@ -39,7 +40,7 @@ export default function AccountsPage() {
         const response = await api.accounts.getAll();
         setAccounts(response.data);
       } catch (error) {
-        // Silently fail
+        console.error('Failed to fetch accounts:', error);
       } finally {
         setLoading(false);
       }
@@ -49,6 +50,11 @@ export default function AccountsPage() {
       fetchAccounts();
     }
   }, [token]);
+
+  // Handle account creation
+  const handleAccountCreated = (newAccount: Account) => {
+    setAccounts([...accounts, newAccount]);
+  };
 
   // Map account type to icon
   const getAccountIcon = (typeName: string) => {
@@ -313,6 +319,13 @@ export default function AccountsPage() {
           </Card>
         )}
       </div>
+
+      {/* Account Modal */}
+      <AccountModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleAccountCreated}
+      />
     </DashboardLayout>
   );
 }
