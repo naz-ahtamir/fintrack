@@ -11,24 +11,9 @@ async function bootstrap() {
   // ========== SECURITY ==========
   app.use(helmet());
 
-  // ========== CORS ==========
-  const allowedOrigins = [
-    // Development
-    'http://localhost:3000',
-    'http://localhost:3001',
-    
-    // Production - Custom Domain (recommended)
-    process.env.FRONTEND_URL, // Set di Render: https://fintrack.com
-    
-    // Production - Vercel Production URL (permanent)
-    'https://fintrack-naz-ahtamirs-projects.vercel.app', // URL ini permanen
-  ].filter(Boolean);
-
-  // Allow Vercel preview deployments untuk testing
-  const isVercelPreview = (origin: string) => {
-    return origin.match(/^https:\/\/fintrack-[a-z0-9]+-naz-ahtamirs-projects\.vercel\.app$/);
-  };
-
+  // ========== CORS - PRODUCTION READY ==========
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  
   app.enableCors({
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, Postman, etc)
@@ -36,18 +21,28 @@ async function bootstrap() {
         return callback(null, true);
       }
 
-      // Check if origin is in allowed list
+      // Development: Allow localhost
+      if (isDevelopment && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+        return callback(null, true);
+      }
+
+      // Production: Allow specific domains
+      const allowedOrigins = [
+        process.env.FRONTEND_URL, // Set ini di Render environment variables
+      ].filter(Boolean);
+
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
-      // Allow Vercel preview deployments (for testing new features)
-      if (process.env.NODE_ENV !== 'production' && isVercelPreview(origin)) {
+      // Allow all Vercel deployments (*.vercel.app)
+      // This is the PERMANENT solution for Vercel
+      if (origin.match(/^https:\/\/.*\.vercel\.app$/)) {
         return callback(null, true);
       }
 
-      // Reject other origins
-      console.warn(`CORS blocked origin: ${origin}`);
+      // Log blocked origins for debugging
+      console.warn(`⚠️  CORS blocked origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
@@ -60,7 +55,9 @@ async function bootstrap() {
       'X-Requested-With',
     ],
     exposedHeaders: ['Content-Length', 'Content-Type'],
-    maxAge: 86400, // 24 hours
+    maxAge: 86400, // 24 hours - reduces preflight requests
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
 
   // ========== VALIDATION ==========
