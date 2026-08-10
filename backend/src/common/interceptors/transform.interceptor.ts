@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Decimal } from '@prisma/client/runtime/library';
 
 /**
  * TransformInterceptor
@@ -25,8 +24,8 @@ export class TransformInterceptor implements NestInterceptor {
       return data;
     }
 
-    // Handle Prisma Decimal instances
-    if (data instanceof Decimal) {
+    // Handle Prisma Decimal instances (check for toNumber method)
+    if (data && typeof data === 'object' && typeof data.toNumber === 'function') {
       return data.toNumber();
     }
 
@@ -36,7 +35,7 @@ export class TransformInterceptor implements NestInterceptor {
     }
 
     // Handle objects
-    if (typeof data === 'object') {
+    if (typeof data === 'object' && data.constructor === Object) {
       const transformed: any = {};
       for (const key in data) {
         if (data.hasOwnProperty(key)) {
