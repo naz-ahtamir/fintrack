@@ -74,6 +74,10 @@ git push origin main
 ### 2. Render Auto-Deploy
 Render automatically deploys when you push to GitHub.
 
+> **Penting:** Pastikan build/start command di Render menyertakan `npx prisma migrate deploy`
+> sebelum `node dist/src/main.js`. Migration ini sudah mencakup seeding `account_types`
+> sehingga `POST /api/accounts` langsung berfungsi tanpa langkah tambahan.
+
 ### 3. Verify Deployment
 - Check Render logs for errors
 - Test API: `https://your-backend.onrender.com/api/docs`
@@ -148,6 +152,10 @@ npm update
 npx prisma migrate deploy
 npx prisma generate
 ```
+
+> **Catatan:** Migration `20260810194813_seed_account_types` secara otomatis mengisi tabel
+> `account_types` (CASH, BANK, EWALLET, CREDIT_CARD, INVESTMENT) saat `prisma migrate deploy`
+> dijalankan. **Tidak perlu menjalankan seed script manual** untuk account types di production.
 
 ### Rollback
 If deployment fails:

@@ -8,6 +8,7 @@ import { CreateAccountDto, UpdateAccountDto, AccountType } from './dto/account.d
 const accountTypeMap: Record<AccountType, string> = {
   [AccountType.CASH]: 'CASH',
   [AccountType.BANK]: 'BANK',
+  [AccountType.EWALLET]: 'EWALLET',
   [AccountType.CREDIT_CARD]: 'CREDIT_CARD',
   [AccountType.INVESTMENT]: 'INVESTMENT',
 };

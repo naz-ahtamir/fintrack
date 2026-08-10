@@ -5,6 +5,7 @@ import { IsString, IsNumber, IsEnum, IsOptional } from 'class-validator';
 export enum AccountType {
   CASH = 'CASH',
   BANK = 'BANK',
+  EWALLET = 'EWALLET',
   CREDIT_CARD = 'CREDIT_CARD',
   INVESTMENT = 'INVESTMENT',
 }
