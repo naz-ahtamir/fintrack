@@ -1,5 +1,5 @@
 // src/accounts/accounts.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AccountRepository } from '../repositories/AccountRepository';
 import { CreateAccountDto, UpdateAccountDto, AccountType } from './dto/account.dto';
@@ -27,7 +27,7 @@ export class AccountsService {
     });
 
     if (!accountType) {
-      throw new Error('Account type not found');
+      throw new NotFoundException('Account type not found');
     }
 
     return this.accountRepo.create({
@@ -52,7 +52,7 @@ export class AccountsService {
     const account = await this.accountRepo.findById(id);
     
     if (!account || account.userId !== userId) {
-      throw new Error('Account not found');
+      throw new NotFoundException('Account not found');
     }
     
     return account;

@@ -11,6 +11,7 @@ import { GoalsModule } from './goals/goals.module';
 import { PrismaService } from './prisma/prisma.service';
 import { UsersModule } from './users/users.module';
 import { LoggingMiddleware } from './common/middleware/logging.middleware';
+import { LoggerService } from './common/logger/logger.service';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { LoggingMiddleware } from './common/middleware/logging.middleware';
   ],
   providers: [
     PrismaService,
+    LoggerService,
     // Apply rate limiting globally
     {
       provide: APP_GUARD,

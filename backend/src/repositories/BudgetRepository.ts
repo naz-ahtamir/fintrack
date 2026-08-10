@@ -1,11 +1,12 @@
 // src/repositories/BudgetRepository.ts
-import { prisma } from '@/lib/prisma';
+import { PrismaService } from '../prisma/prisma.service';
 import { Budget, Prisma } from '../../generated/prisma/client';
 
 export class BudgetRepository {
+    constructor(private prisma: PrismaService) {}
   // Create budget
   async create(data: Prisma.BudgetCreateInput): Promise<Budget> {
-    return prisma.budget.create({
+    return this.prisma.budget.create({
       data,
       include: {
         category: true,
@@ -19,7 +20,7 @@ export class BudgetRepository {
     month?: number,
     year?: number
   ): Promise<Budget[]> {
-    return prisma.budget.findMany({
+    return this.prisma.budget.findMany({
       where: {
         userId,
         isActive: true,
@@ -35,7 +36,7 @@ export class BudgetRepository {
 
   // Find budget by ID
   async findById(id: number): Promise<Budget | null> {
-    return prisma.budget.findUnique({
+    return this.prisma.budget.findUnique({
       where: { id },
       include: {
         category: true,
@@ -50,7 +51,7 @@ export class BudgetRepository {
     month: number,
     year: number
   ): Promise<Budget | null> {
-    return prisma.budget.findUnique({
+    return this.prisma.budget.findUnique({
       where: {
         userId_categoryId_month_year: {
           userId,
@@ -67,7 +68,7 @@ export class BudgetRepository {
 
   // Update budget
   async update(id: number, data: Prisma.BudgetUpdateInput): Promise<Budget> {
-    return prisma.budget.update({
+    return this.prisma.budget.update({
       where: { id },
       data,
       include: {
@@ -78,7 +79,7 @@ export class BudgetRepository {
 
   // Delete budget (soft delete)
   async delete(id: number): Promise<Budget> {
-    return prisma.budget.update({
+    return this.prisma.budget.update({
       where: { id },
       data: { isActive: false },
     });
@@ -86,7 +87,7 @@ export class BudgetRepository {
 
   // Get budget spending
   async getBudgetSpending(budgetId: number): Promise<number> {
-    const budget = await prisma.budget.findUnique({
+    const budget = await this.prisma.budget.findUnique({
       where: { id: budgetId },
       include: { category: true },
     });
@@ -97,7 +98,7 @@ export class BudgetRepository {
     const startDate = new Date(budget.year, budget.month - 1, 1);
     const endDate = new Date(budget.year, budget.month, 0, 23, 59, 59);
 
-    const result = await prisma.transaction.aggregate({
+    const result = await this.prisma.transaction.aggregate({
       where: {
         userId: budget.userId,
         categoryId: budget.categoryId,
@@ -130,7 +131,7 @@ export class BudgetRepository {
 
     const budgetsWithSpending = await Promise.all(
       budgets.map(async (budget) => {
-        const result = await prisma.transaction.aggregate({
+        const result = await this.prisma.transaction.aggregate({
           where: {
             userId,
             categoryId: budget.categoryId,
@@ -162,5 +163,3 @@ export class BudgetRepository {
     return budgetsWithSpending;
   }
 }
-
-export const budgetRepository = new BudgetRepository();

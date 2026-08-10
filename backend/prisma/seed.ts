@@ -4,291 +4,197 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 import * as bcrypt from 'bcrypt';
 
-// Initialize Prisma with PostgreSQL adapter (same as PrismaService)
-const pool = new pg.Pool({ 
-  connectionString: process.env.DATABASE_URL 
-});
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
+// === Helper: generate transaksi acak untuk rentang 1 Agustus 2025 – 31 Juli 2026 ===
+async function generateRandomTransactions(
+  userId: number,
+  accountId: number,
+  categoryIds: number[],
+  count: number = 35
+) {
+  const startDate = new Date(2025, 7, 1);  // 1 Agustus 2025
+  const endDate   = new Date(2026, 6, 31); // 31 Juli 2026
+  const diffTime = endDate.getTime() - startDate.getTime();
+
+  const transactions = [];
+  const types = ['INCOME', 'EXPENSE'] as const;
+
+  for (let i = 0; i < count; i++) {
+    const randomTime = startDate.getTime() + Math.floor(Math.random() * diffTime);
+    const randomDate = new Date(randomTime);
+
+    const type = types[Math.floor(Math.random() * types.length)];
+    const amount = type === 'INCOME'
+      ? Math.floor(Math.random() * (15000000 - 3000000 + 1) + 3000000)
+      : Math.floor(Math.random() * (5000000 - 50000 + 1) + 50000);
+
+    const categoryId = categoryIds[Math.floor(Math.random() * categoryIds.length)];
+
+    transactions.push({
+      userId,
+      accountId,
+      categoryId,
+      type,
+      amount,
+      description: `${type === 'INCOME' ? 'Pendapatan' : 'Pengeluaran'} ${randomDate.toLocaleDateString('id-ID')}`,
+      transactionDate: randomDate,
+    });
+  }
+  return transactions;
+}
+
 async function main() {
-  console.log('🌱 Starting database seeding...');
+  console.log('🌱 Seeding database (non-destructive) – rentang 2025-2026...');
 
-  // Clear existing data (in correct order due to FK constraints)
-  console.log('🗑️  Clearing existing data...');
-  await prisma.goalTransaction.deleteMany();
-  await prisma.goal.deleteMany();
-  await prisma.budgetAlert.deleteMany();
-  await prisma.budget.deleteMany();
-  await prisma.transaction.deleteMany();
-  await prisma.category.deleteMany();
-  await prisma.account.deleteMany();
-  await prisma.accountType.deleteMany();
-  await prisma.user.deleteMany();
+  // 1. Account Types
+  console.log('\n📦 Account Types...');
+  const accountTypeNames = ['CASH', 'BANK', 'CREDIT_CARD', 'INVESTMENT'] as const;
+  for (const name of accountTypeNames) {
+    const exists = await prisma.accountType.findFirst({ where: { name } });
+    if (!exists) {
+      await prisma.accountType.create({ data: { name } });
+      console.log(`  ✅ Created: ${name}`);
+    } else {
+      console.log(`  ⏭️  Already exists: ${name}`);
+    }
+  }
 
-  // 1. Create Account Types
-  console.log('📦 Creating account types...');
-  const cashType = await prisma.accountType.create({
-    data: { name: 'CASH' },
-  });
-  const bankType = await prisma.accountType.create({
-    data: { name: 'BANK' },
-  });
-  const creditType = await prisma.accountType.create({
-    data: { name: 'CREDIT_CARD' },
-  });
-  const investmentType = await prisma.accountType.create({
-    data: { name: 'INVESTMENT' },
-  });
+  const cashType = await prisma.accountType.findFirst({ where: { name: 'CASH' } });
+  const bankType = await prisma.accountType.findFirst({ where: { name: 'BANK' } });
+  const creditType = await prisma.accountType.findFirst({ where: { name: 'CREDIT_CARD' } });
 
-  // 2. Create Users
-  console.log('👥 Creating users...');
-  const demoUser = await prisma.user.create({
-    data: {
+  // 2. Users dengan password @2026
+  console.log('\n👥 Users...');
+  const demoUser = await prisma.user.upsert({
+    where: { email: 'demo@fintrack.com' },
+    update: {},
+    create: {
       email: 'demo@fintrack.com',
-      password: await bcrypt.hash('demo123', 10),
+      password: await bcrypt.hash('Demo@2026#', 10),
       name: 'Demo User',
       role: 'USER',
       emailVerified: true,
     },
   });
+  console.log('  ✅ Demo user ready');
 
-  const admin = await prisma.user.create({
-    data: {
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@fintrack.com' },
+    update: {},
+    create: {
       email: 'admin@fintrack.com',
-      password: await bcrypt.hash('admin123', 10),
+      password: await bcrypt.hash('Admin@2026#', 10),
       name: 'Admin User',
       role: 'ADMIN',
       emailVerified: true,
     },
   });
+  console.log('  ✅ Admin user ready');
 
-  // 3. Create Accounts
-  console.log('💰 Creating accounts...');
-  const cashAccount = await prisma.account.create({
-    data: {
-      name: 'Cash Wallet',
-      balance: 5000000,
-      currency: 'IDR',
-      userId: demoUser.id,
-      accountTypeId: cashType.id,
+  const user2 = await prisma.user.upsert({
+    where: { email: 'user2@fintrack.com' },
+    update: {},
+    create: {
+      email: 'user2@fintrack.com',
+      password: await bcrypt.hash('User@2026#', 10),
+      name: 'User Dua',
+      role: 'USER',
+      emailVerified: true,
     },
   });
+  console.log('  ✅ User2 ready');
 
-  const bankAccount = await prisma.account.create({
-    data: {
-      name: 'BCA Main Account',
-      balance: 15000000,
-      currency: 'IDR',
-      userId: demoUser.id,
-      accountTypeId: bankType.id,
-    },
-  });
-
-  const creditCard = await prisma.account.create({
-    data: {
-      name: 'BCA Credit Card',
-      balance: -2000000,
-      currency: 'IDR',
-      userId: demoUser.id,
-      accountTypeId: creditType.id,
-    },
-  });
-
-  // 4. Create Categories
-  console.log('🏷️  Creating categories...');
-  const incomeCategories = await Promise.all([
-    prisma.category.create({
-      data: {
-        name: 'Salary',
-        type: 'INCOME',
-        color: '#22c55e',
-        icon: '💵',
-        userId: demoUser.id,
-      },
-    }),
-    prisma.category.create({
-      data: {
-        name: 'Freelance',
-        type: 'INCOME',
-        color: '#3b82f6',
-        icon: '💼',
-        userId: demoUser.id,
-      },
-    }),
-    prisma.category.create({
-      data: {
-        name: 'Investment',
-        type: 'INCOME',
-        color: '#8b5cf6',
-        icon: '📈',
-        userId: demoUser.id,
-      },
-    }),
-  ]);
-
-  const expenseCategories = await Promise.all([
-    prisma.category.create({
-      data: {
-        name: 'Food & Dining',
-        type: 'EXPENSE',
-        color: '#ef4444',
-        icon: '🍔',
-        userId: demoUser.id,
-      },
-    }),
-    prisma.category.create({
-      data: {
-        name: 'Transportation',
-        type: 'EXPENSE',
-        color: '#f59e0b',
-        icon: '🚗',
-        userId: demoUser.id,
-      },
-    }),
-    prisma.category.create({
-      data: {
-        name: 'Shopping',
-        type: 'EXPENSE',
-        color: '#ec4899',
-        icon: '🛍️',
-        userId: demoUser.id,
-      },
-    }),
-    prisma.category.create({
-      data: {
-        name: 'Entertainment',
-        type: 'EXPENSE',
-        color: '#8b5cf6',
-        icon: '🎮',
-        userId: demoUser.id,
-      },
-    }),
-    prisma.category.create({
-      data: {
-        name: 'Utilities',
-        type: 'EXPENSE',
-        color: '#06b6d4',
-        icon: '💡',
-        userId: demoUser.id,
-      },
-    }),
-  ]);
-
-  // 5. Create Transactions (Last 6 months)
-  console.log('💸 Creating transactions...');
-  const now = new Date();
-  const transactions = [];
-
-  for (let month = 5; month >= 0; month--) {
-    const monthDate = new Date(now.getFullYear(), now.getMonth() - month, 15);
-    
-    // Income transactions
-    transactions.push(
-      prisma.transaction.create({
-        data: {
-          type: 'INCOME',
-          amount: month === 0 ? 8000000 : (month % 2 === 0 ? 11000000 : 8000000),
-          description: 'Monthly Salary',
-          transactionDate: monthDate,
-          userId: demoUser.id,
-          accountId: bankAccount.id,
-          categoryId: incomeCategories[0].id,
-        },
-      }),
-    );
-
-    // Expense transactions (varied amounts)
-    const expenseCount = 20 + Math.floor(Math.random() * 10);
-    for (let i = 0; i < expenseCount; i++) {
-      const dayOffset = Math.floor(Math.random() * 28);
-      const txDate = new Date(now.getFullYear(), now.getMonth() - month, dayOffset + 1);
-      const category = expenseCategories[Math.floor(Math.random() * expenseCategories.length)];
-      const amount = 50000 + Math.floor(Math.random() * 500000);
-
-      transactions.push(
-        prisma.transaction.create({
+  // 3. Accounts (masing-masing user 2+ akun)
+  console.log('\n💰 Accounts...');
+  const ensureAccounts = async (user: any, accounts: { name: string; balance: number; type: any }[]) => {
+    const existing = await prisma.account.count({ where: { userId: user.id } });
+    if (existing === 0) {
+      for (const acc of accounts) {
+        await prisma.account.create({
           data: {
-            type: 'EXPENSE',
-            amount,
-            description: `${category.name} - ${category.icon}`,
-            transactionDate: txDate,
-            userId: demoUser.id,
-            accountId: Math.random() > 0.7 ? cashAccount.id : bankAccount.id,
-            categoryId: category.id,
+            name: acc.name,
+            balance: acc.balance,
+            currency: 'IDR',
+            userId: user.id,
+            accountTypeId: acc.type.id,
           },
-        }),
-      );
+        });
+      }
+      console.log(`  ✅ ${accounts.length} accounts for ${user.email}`);
+    } else {
+      console.log(`  ⏭️  ${user.email} already has ${existing} accounts`);
     }
+  };
+
+  await ensureAccounts(demoUser, [
+    { name: 'Dompet Demo', balance: 5000000, type: cashType },
+    { name: 'BCA Demo', balance: 15000000, type: bankType },
+    { name: 'CC Demo', balance: -2000000, type: creditType },
+  ]);
+  await ensureAccounts(admin, [
+    { name: 'Dompet Admin', balance: 1000000, type: cashType },
+    { name: 'Mandiri Admin', balance: 5000000, type: bankType },
+  ]);
+  await ensureAccounts(user2, [
+    { name: 'Dompet User2', balance: 200000, type: cashType },
+    { name: 'BNI User2', balance: 800000, type: bankType },
+  ]);
+
+  // 4. Categories (untuk demo user)
+  console.log('\n🏷️  Categories...');
+  let categoryIds: number[] = [];
+  const existingCats = await prisma.category.findMany({ where: { userId: demoUser.id } });
+  if (existingCats.length === 0) {
+    const created = await prisma.category.createManyAndReturn({
+      data: [
+        { name: 'Salary', type: 'INCOME', color: '#22c55e', userId: demoUser.id },
+        { name: 'Freelance', type: 'INCOME', color: '#3b82f6', userId: demoUser.id },
+        { name: 'Food', type: 'EXPENSE', color: '#ef4444', userId: demoUser.id },
+        { name: 'Transport', type: 'EXPENSE', color: '#f59e0b', userId: demoUser.id },
+        { name: 'Shopping', type: 'EXPENSE', color: '#ec4899', userId: demoUser.id },
+        { name: 'Entertainment', type: 'EXPENSE', color: '#8b5cf6', userId: demoUser.id },
+        { name: 'Utilities', type: 'EXPENSE', color: '#06b6d4', userId: demoUser.id },
+        { name: 'Investment', type: 'INCOME', color: '#8b5cf6', userId: demoUser.id },
+      ],
+    });
+    categoryIds = created.map(c => c.id);
+    console.log('  ✅ Created 8 categories');
+  } else {
+    categoryIds = existingCats.map(c => c.id);
+    console.log(`  ⏭️  Using existing ${categoryIds.length} categories`);
   }
 
-  await Promise.all(transactions);
+  // 5. Transaksi untuk semua user (rentang 2025-2026)
+  console.log('\n📊 Transactions...');
+  const allUsers = [demoUser, admin, user2];
+  for (const user of allUsers) {
+    const accounts = await prisma.account.findMany({ where: { userId: user.id } });
+    if (accounts.length === 0 || categoryIds.length === 0) {
+      console.log(`  ⏭️  Skipping ${user.email} (no accounts or categories)`);
+      continue;
+    }
 
-  // 6. Create Budgets
-  console.log('📊 Creating budgets...');
-  const currentMonth = now.getMonth() + 1; // 1-12
-  const currentYear = now.getFullYear();
-  
-  await Promise.all([
-    prisma.budget.create({
-      data: {
-        amount: 3000000,
-        month: currentMonth,
-        year: currentYear,
-        userId: demoUser.id,
-        categoryId: expenseCategories[0].id,
-      },
-    }),
-    prisma.budget.create({
-      data: {
-        amount: 1500000,
-        month: currentMonth,
-        year: currentYear,
-        userId: demoUser.id,
-        categoryId: expenseCategories[1].id,
-      },
-    }),
-  ]);
+    const existingCount = await prisma.transaction.count({ where: { userId: user.id } });
+    if (existingCount > 20) {
+      console.log(`  ⏭️  ${user.email} already has ${existingCount} transactions`);
+      continue;
+    }
 
-  // 7. Create Financial Goals
-  console.log('🎯 Creating financial goals...');
-  await Promise.all([
-    prisma.goal.create({
-      data: {
-        title: 'Emergency Fund',
-        description: '6 months of living expenses',
-        category: 'Saving',
-        targetAmount: 50000000,
-        currentAmount: 18000000,
-        targetDate: new Date(now.getFullYear() + 1, 11, 31),
-        startDate: new Date(),
-        priority: 1,
-        userId: demoUser.id,
-      },
-    }),
-    prisma.goal.create({
-      data: {
-        title: 'Vacation to Japan',
-        description: 'Trip to Tokyo and Osaka',
-        category: 'Travel',
-        targetAmount: 25000000,
-        currentAmount: 8500000,
-        targetDate: new Date(now.getFullYear() + 1, 5, 1),
-        startDate: new Date(),
-        priority: 2,
-        userId: demoUser.id,
-      },
-    }),
-  ]);
+    const mainAccount = accounts[0];
+    const txData = await generateRandomTransactions(user.id, mainAccount.id, categoryIds, 35);
+    await prisma.transaction.createMany({ data: txData });
+    console.log(`  ✅ Created ${txData.length} transactions for ${user.email}`);
+  }
 
-  console.log('✅ Database seeding completed successfully!');
-  console.log('');
-  console.log('📝 Demo credentials:');
-  console.log('   Email: demo@fintrack.com');
-  console.log('   Password: demo123');
-  console.log('');
-  console.log('   Email: admin@fintrack.com');
-  console.log('   Password: admin123');
+  console.log('\n✅ Seeding completed!');
+  console.log('📝 Credentials:');
+  console.log('   demo@fintrack.com / Demo@2026#');
+  console.log('   admin@fintrack.com / Admin@2026#');
+  console.log('   user2@fintrack.com / User@2026#');
+  console.log('⚠️  Existing data was preserved.');
 }
 
 main()
@@ -296,6 +202,4 @@ main()
     console.error('❌ Seeding failed:', e);
     process.exit(1);
   })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .finally(() => prisma.$disconnect());

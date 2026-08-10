@@ -1,11 +1,11 @@
-// src/repositories/GoalRepository.ts
-import { prisma } from '@/lib/prisma';
+import { PrismaService } from '../prisma/prisma.service';
 import { Goal, GoalTransaction, Prisma, GoalStatus } from '../../generated/prisma/client';
 
 export class GoalRepository {
-  // Create goal
+  constructor(private prisma: PrismaService) {}
+  
   async create(data: Prisma.GoalCreateInput): Promise<Goal> {
-    return prisma.goal.create({
+    return this.prisma.goal.create({
       data,
       include: {
         goalTransactions: true,
@@ -15,7 +15,7 @@ export class GoalRepository {
 
   // Find goals by user
   async findByUserId(userId: number, status?: GoalStatus): Promise<Goal[]> {
-    return prisma.goal.findMany({
+    return this.prisma.goal.findMany({
       where: {
         userId,
         ...(status && { status }),
@@ -31,7 +31,7 @@ export class GoalRepository {
 
   // Find goal by ID
   async findById(id: number): Promise<Goal | null> {
-    return prisma.goal.findUnique({
+    return this.prisma.goal.findUnique({
       where: { id },
       include: {
         goalTransactions: {
@@ -43,7 +43,7 @@ export class GoalRepository {
 
   // Update goal
   async update(id: number, data: Prisma.GoalUpdateInput): Promise<Goal> {
-    return prisma.goal.update({
+    return this.prisma.goal.update({
       where: { id },
       data,
       include: {
@@ -54,7 +54,7 @@ export class GoalRepository {
 
   // Delete goal
   async delete(id: number): Promise<Goal> {
-    return prisma.goal.delete({
+    return this.prisma.goal.delete({
       where: { id },
     });
   }
@@ -67,7 +67,7 @@ export class GoalRepository {
     notes?: string
   ): Promise<GoalTransaction> {
     // Create transaction
-    const transaction = await prisma.goalTransaction.create({
+    const transaction = await this.prisma.goalTransaction.create({
       data: {
         userId,
         goalId,
@@ -77,13 +77,13 @@ export class GoalRepository {
     });
 
     // Update goal current amount
-    await prisma.goal.update({
+    await this.prisma.goal.update({
       where: { id: goalId },
       data: {
         currentAmount: {
           increment: amount,
         },
-      },
+        },
     });
 
     // Check if goal is completed
@@ -143,10 +143,10 @@ export class GoalRepository {
     overallProgress: number;
   }> {
     const [total, active, completed, amounts] = await Promise.all([
-      prisma.goal.count({ where: { userId } }),
-      prisma.goal.count({ where: { userId, status: 'ACTIVE' } }),
-      prisma.goal.count({ where: { userId, status: 'COMPLETED' } }),
-      prisma.goal.aggregate({
+      this.prisma.goal.count({ where: { userId } }),
+      this.prisma.goal.count({ where: { userId, status: 'ACTIVE' } }),
+      this.prisma.goal.count({ where: { userId, status: 'COMPLETED' } }),
+      this.prisma.goal.aggregate({
         where: { userId },
         _sum: {
           targetAmount: true,
@@ -169,5 +169,3 @@ export class GoalRepository {
     };
   }
 }
-
-export const goalRepository = new GoalRepository();

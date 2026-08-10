@@ -18,13 +18,16 @@ A production-ready, full-stack personal finance management application built wit
 
 ### Technical Capabilities
 - Production-ready codebase with enterprise-level quality standards
-- Enterprise-grade security with rate limiting and password policies
-- Performance optimized with efficient database queries and caching
+- Enterprise-grade security with RBAC (Role-Based Access Control), rate limiting, and password policies
+- RBAC Implementation: Admin-only endpoints protected with RolesGuard and JWT role validation
+- Performance optimized with efficient database queries and atomic balance recalculation
 - Fully responsive design for desktop and mobile devices
 - Clean, intuitive interface built with Tailwind CSS
 - Real-time data updates across all modules
-- Complete API documentation with Swagger/OpenAPI
+- Complete API documentation with Swagger/OpenAPI and Postman collection
 - Full TypeScript type safety throughout the application
+- IDOR Protection: All endpoints validate user ownership before granting access
+- Automatic balance recalculation on transaction create/update/delete operations
 
 ## Technology Stack
 
@@ -108,8 +111,9 @@ npx prisma db seed
 ```
 
 This creates the following demo accounts:
-- Demo User: demo@fintrack.com / demo123
-- Admin User: admin@fintrack.com / admin123
+- Demo User: `demo@fintrack.com` / `Demo@2026#`
+- Admin User: `admin@fintrack.com` / `Admin@2026#`
+- User 2: `user2@fintrack.com` / `User@2026#`
 
 ### Running the Application
 
@@ -169,14 +173,12 @@ milestone-4-naz-ahtamir/
 │   │   └── store/                  # Zustand state management stores
 │   └── .env.local                  # Frontend environment variables
 │
-├── database/                       # Database documentation and backups
-│   ├── schema.sql                  # PostgreSQL schema DDL
-│   ├── ER_DIAGRAM.md               # Entity relationship diagram
-│   └── README.md                   # Database documentation
+├── database/                       # Database documentation and SQL queries
+│   ├── queries.sql                 # Advanced SQL queries (8+ queries with JOINs, GROUP BY)
+│   └── ERD.png                     # Entity relationship diagram (visual)
 │
 ├── .gitignore                      # Git ignore configuration
-├── README.md                       # Project documentation (this file)
-└── DEMO_ACCOUNTS.md                # Demo account credentials
+└── README.md                       # Project documentation (this file)
 ```
 
 ## API Documentation
@@ -192,11 +194,13 @@ GET    /api/auth/profile               Get authenticated user profile
 ### User Management Endpoints
 
 ```
-GET    /api/users/profile              Get current user profile
+GET    /api/users/profile              Get current user profile (authenticated users)
 GET    /api/users/statistics           Get user statistics (transactions, accounts, etc.)
 GET    /api/users/settings             Get user settings and preferences
 PATCH  /api/users/settings             Update user settings
 POST   /api/users/change-password      Change user password
+GET    /api/users                      Get all users (ADMIN ONLY - protected by RolesGuard)
+GET    /api/users/:id                  Get user by ID (ADMIN ONLY - protected by RolesGuard)
 ```
 
 ### Transaction Endpoints
@@ -250,7 +254,10 @@ DELETE /api/goals/:id                  Delete goal
 POST   /api/goals/:id/contributions    Add contribution to goal
 ```
 
-**Complete API Documentation:** http://localhost:3000/api/docs (Swagger UI)
+**Complete API Documentation:** 
+- Swagger UI: http://localhost:3000/api/docs
+- Postman Collection: `docs/FinTrack-API.postman_collection.json`
+- API Smoke Test Guide: `docs/api-smoke-test.md`
 
 ## Environment Configuration
 
@@ -318,15 +325,26 @@ NODE_ENV="development"
 
 **Complete Schema:** See `Backend/prisma/schema.prisma`
 
-**Visual Diagram:** See `database/ER_DIAGRAM.md`
+**Advanced SQL Queries:** See `database/queries.sql` for 8+ production-ready queries including:
+- Filtered SELECT queries
+- 3-table JOINs with multiple relations
+- GROUP BY aggregations (totals per category, per month)
+- LEFT JOINs for finding unused accounts
+- Subqueries for above-average analysis
+- Date range filtering and time-based analytics
+
+**Visual Diagram:** Generate ERD using Prisma Studio or database visualization tools
 
 ## Security Implementation
 
 ### Authentication & Authorization
 - JWT token-based authentication with 7-day expiration
+- JWT payload includes user role for RBAC enforcement
 - Bcrypt password hashing with 10 salt rounds
-- Protected routes using NestJS guards
+- Protected routes using NestJS guards (JwtAuthGuard, RolesGuard)
+- Role-based access control: Admin-only endpoints enforced at controller level
 - Automatic token refresh handling
+- IDOR Protection: Ownership validation on all PATCH/DELETE operations
 
 ### Rate Limiting
 - Login endpoint: 5 attempts per minute per IP

@@ -1,15 +1,22 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { budgetRepository } from '@/repositories/BudgetRepository';
+import { PrismaService } from '../prisma/prisma.service'; // <-- TAMBAHKAN
+import { BudgetRepository } from '../repositories/BudgetRepository'; // <-- HAPUS import budgetRepository (instance)
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 
 @Injectable()
 export class BudgetsService {
+  private budgetRepo: BudgetRepository; // <-- Deklarasikan repository
+
+  constructor(private prisma: PrismaService) {
+    // <-- Inject PrismaService dan buat instance repository
+    this.budgetRepo = new BudgetRepository(this.prisma);
+  }
+
   async create(userId: number, createBudgetDto: CreateBudgetDto) {
     const { categoryId, amount, month, year, alertThreshold } = createBudgetDto;
 
-    // Check if budget already exists for this category and period
-    const existing = await budgetRepository.findByCategoryAndPeriod(
+    const existing = await this.budgetRepo.findByCategoryAndPeriod(
       userId,
       categoryId,
       month,
@@ -22,7 +29,7 @@ export class BudgetsService {
       );
     }
 
-    return budgetRepository.create({
+    return this.budgetRepo.create({
       user: { connect: { id: userId } },
       category: { connect: { id: categoryId } },
       amount,
@@ -33,22 +40,21 @@ export class BudgetsService {
   }
 
   async findAll(userId: number, month?: number, year?: number) {
-    // If no month/year provided, use current month
     const now = new Date();
     const targetMonth = month || now.getMonth() + 1;
     const targetYear = year || now.getFullYear();
 
-    return budgetRepository.getBudgetsWithSpending(userId, targetMonth, targetYear);
+    return this.budgetRepo.getBudgetsWithSpending(userId, targetMonth, targetYear);
   }
 
   async findOne(id: number, userId: number) {
-    const budget = await budgetRepository.findById(id);
+    const budget = await this.budgetRepo.findById(id);
 
     if (!budget || budget.userId !== userId) {
       throw new NotFoundException('Budget not found');
     }
 
-    const spent = await budgetRepository.getBudgetSpending(id);
+    const spent = await this.budgetRepo.getBudgetSpending(id);
     const budgetAmount = budget.amount.toNumber();
     const remaining = budgetAmount - spent;
     const percentage = budgetAmount > 0 ? (spent / budgetAmount) * 100 : 0;
@@ -62,23 +68,23 @@ export class BudgetsService {
   }
 
   async update(id: number, userId: number, updateBudgetDto: UpdateBudgetDto) {
-    const budget = await budgetRepository.findById(id);
+    const budget = await this.budgetRepo.findById(id);
 
     if (!budget || budget.userId !== userId) {
       throw new NotFoundException('Budget not found');
     }
 
-    return budgetRepository.update(id, updateBudgetDto);
+    return this.budgetRepo.update(id, updateBudgetDto);
   }
 
   async remove(id: number, userId: number) {
-    const budget = await budgetRepository.findById(id);
+    const budget = await this.budgetRepo.findById(id);
 
     if (!budget || budget.userId !== userId) {
       throw new NotFoundException('Budget not found');
     }
 
-    return budgetRepository.delete(id);
+    return this.budgetRepo.delete(id);
   }
 
   async getBudgetSummary(userId: number, month?: number, year?: number) {
@@ -86,7 +92,7 @@ export class BudgetsService {
     const targetMonth = month || now.getMonth() + 1;
     const targetYear = year || now.getFullYear();
 
-    const budgets = await budgetRepository.getBudgetsWithSpending(
+    const budgets = await this.budgetRepo.getBudgetsWithSpending(
       userId,
       targetMonth,
       targetYear

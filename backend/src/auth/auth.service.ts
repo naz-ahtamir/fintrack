@@ -44,13 +44,14 @@ export class AuthService {
     });
 
     // Generate token
-    const token = this.generateToken(user.id, user.email);
+    const token = await this.generateToken(user.id, user.email);
 
     return {
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
+        role: user.role,
       },
       token,
     };
@@ -82,13 +83,14 @@ export class AuthService {
     }
 
     // Generate token
-    const token = this.generateToken(user.id, user.email);
+    const token = await this.generateToken(user.id, user.email);
 
     return {
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
+        role: user.role,
       },
       token,
     };
@@ -107,12 +109,19 @@ export class AuthService {
   }
 
   /**
-   * Generate JWT token
+   * Generate JWT token with role
    */
-  private generateToken(userId: number, email: string) {
+  private async generateToken(userId: number, email: string) {
+    // Fetch user role from database
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
     const payload = {
       sub: userId,
       email,
+      role: user?.role || 'USER',
     };
 
     return this.jwtService.sign(payload);

@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './auth.guard';
+import { RolesGuard } from './guards/roles.guard'; 
 import { PrismaService } from '../prisma/prisma.service';
 import { PrismaModule } from '../prisma/prisma.module';
 
@@ -17,7 +18,7 @@ import { PrismaModule } from '../prisma/prisma.module';
       signOptions: { expiresIn: '7d' },
     }),
   ],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard, PrismaService],
+  providers: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard, PrismaService],
   controllers: [AuthController],
   exports: [AuthService, JwtAuthGuard],
 })
