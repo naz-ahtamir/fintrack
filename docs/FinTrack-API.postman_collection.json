@@ -65,7 +65,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"Test@2026#\",\n  \"name\": \"New User\"\n}"
+              "raw": "{\n  \"email\": \"testuser{{$timestamp}}@example.com\",\n  \"password\": \"Test@2026#\",\n  \"name\": \"Test User\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/auth/register",
@@ -424,7 +424,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Groceries\",\n  \"type\": \"EXPENSE\",\n  \"color\": \"#ef4444\"\n}",
+              "raw": "{\n  \"name\": \"Healthcare & Medical\",\n  \"type\": \"EXPENSE\",\n  \"color\": \"#10b981\",\n  \"icon\": \"💊\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
