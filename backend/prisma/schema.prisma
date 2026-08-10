@@ -3,10 +3,10 @@
 // Production-ready dengan best practices, proper relationships, dan indexing
 // ============================================================================
 
-generator erd {
-  provider = "prisma-erd-generator"
-  output   = "../ERD.svg" // Bisa diatur sesuai keinginan, misal di folder docs
-}
+// generator erd {
+//  provider = "prisma-erd-generator"
+//  output   = "../ERD.svg" // Bisa diatur sesuai keinginan, misal di folder docs
+// }
 
 generator client {
   provider = "prisma-client"
