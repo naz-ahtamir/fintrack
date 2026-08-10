@@ -111,9 +111,10 @@ npx prisma db seed
 ```
 
 This creates the following demo accounts:
-- Demo User: `demo@fintrack.com` / `Demo@2026#`
-- Admin User: `admin@fintrack.com` / `Admin@2026#`
-- User 2: `user2@fintrack.com` / `User@2026#`
+- Demo User: `demo@fintrack.com` / `Demo@2026#` (Role: USER)
+- Admin User: `admin@fintrack.com` / `Admin@2026#` (Role: ADMIN)
+- Moderator User: `moderator@fintrack.com` / `Mod@2026#` (Role: MODERATOR)
+- User 2: `user2@fintrack.com` / `User@2026#` (Role: USER)
 
 ### Running the Application
 
@@ -199,9 +200,14 @@ GET    /api/users/statistics           Get user statistics (transactions, accoun
 GET    /api/users/settings             Get user settings and preferences
 PATCH  /api/users/settings             Update user settings
 POST   /api/users/change-password      Change user password
-GET    /api/users                      Get all users (ADMIN ONLY - protected by RolesGuard)
-GET    /api/users/:id                  Get user by ID (ADMIN ONLY - protected by RolesGuard)
+GET    /api/users                      Get all users (ADMIN & MODERATOR ONLY - protected by RolesGuard)
+GET    /api/users/:id                  Get user by ID (ADMIN & MODERATOR ONLY - protected by RolesGuard)
 ```
+
+**RBAC Implementation:**
+- `GET /api/users` - Accessible by ADMIN and MODERATOR (read-only for MODERATOR)
+- `GET /api/users/:id` - Accessible by ADMIN and MODERATOR (read-only for MODERATOR)
+- Regular USER role **cannot** access these endpoints (403 Forbidden)
 
 ### Transaction Endpoints
 
@@ -342,7 +348,11 @@ NODE_ENV="development"
 - JWT payload includes user role for RBAC enforcement
 - Bcrypt password hashing with 10 salt rounds
 - Protected routes using NestJS guards (JwtAuthGuard, RolesGuard)
-- Role-based access control: Admin-only endpoints enforced at controller level
+- **Role-based access control with 3 levels:**
+  - **USER:** Can only manage own financial data
+  - **MODERATOR:** Can view all users (read-only) for support/moderation
+  - **ADMIN:** Full system access, can manage all users and data
+- Admin/Moderator-only endpoints enforced at controller level
 - Automatic token refresh handling
 - IDOR Protection: Ownership validation on all PATCH/DELETE operations
 

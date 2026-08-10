@@ -15,12 +15,12 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
   
   @Get()
-  @ApiOperation({ summary: 'Get all users (Admin only)', description: 'Retrieves all users - requires ADMIN role' })
+  @ApiOperation({ summary: 'Get all users (Admin/Moderator only)', description: 'Retrieves all users - requires ADMIN or MODERATOR role' })
   @ApiResponse({ status: 200, description: 'List of users retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing JWT token' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Requires ADMIN role' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Requires ADMIN or MODERATOR role' })
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'MODERATOR')
   findAll() {
     return this.usersService.findAll(); 
   }
@@ -84,14 +84,14 @@ export class UsersController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get user by ID (Admin only)', description: 'Retrieves a specific user by ID - requires ADMIN role' })
+  @ApiOperation({ summary: 'Get user by ID (Admin/Moderator only)', description: 'Retrieves a specific user by ID - requires ADMIN or MODERATOR role' })
   @ApiParam({ name: 'id', description: 'User ID', type: 'integer', example: 1 })
   @ApiResponse({ status: 200, description: 'User retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing JWT token' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Requires ADMIN role' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Requires ADMIN or MODERATOR role' })
   @ApiResponse({ status: 404, description: 'User not found' })
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'MODERATOR')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(+id);
   }

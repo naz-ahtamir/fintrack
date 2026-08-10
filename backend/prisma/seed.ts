@@ -94,6 +94,19 @@ async function main() {
   });
   console.log('  ✅ Admin user ready');
 
+  const moderator = await prisma.user.upsert({
+    where: { email: 'moderator@fintrack.com' },
+    update: {},
+    create: {
+      email: 'moderator@fintrack.com',
+      password: await bcrypt.hash('Mod@2026#', 10),
+      name: 'Moderator User',
+      role: 'MODERATOR',
+      emailVerified: true,
+    },
+  });
+  console.log('  ✅ Moderator user ready');
+
   const user2 = await prisma.user.upsert({
     where: { email: 'user2@fintrack.com' },
     update: {},
@@ -138,6 +151,10 @@ async function main() {
     { name: 'Dompet Admin', balance: 1000000, type: cashType },
     { name: 'Mandiri Admin', balance: 5000000, type: bankType },
   ]);
+  await ensureAccounts(moderator, [
+    { name: 'Dompet Moderator', balance: 500000, type: cashType },
+    { name: 'BRI Moderator', balance: 2000000, type: bankType },
+  ]);
   await ensureAccounts(user2, [
     { name: 'Dompet User2', balance: 200000, type: cashType },
     { name: 'BNI User2', balance: 800000, type: bankType },
@@ -169,7 +186,7 @@ async function main() {
 
   // 5. Transaksi untuk semua user (rentang 2025-2026)
   console.log('\n📊 Transactions...');
-  const allUsers = [demoUser, admin, user2];
+  const allUsers = [demoUser, admin, moderator, user2];
   for (const user of allUsers) {
     const accounts = await prisma.account.findMany({ where: { userId: user.id } });
     if (accounts.length === 0 || categoryIds.length === 0) {
@@ -193,6 +210,7 @@ async function main() {
   console.log('📝 Credentials:');
   console.log('   demo@fintrack.com / Demo@2026#');
   console.log('   admin@fintrack.com / Admin@2026#');
+  console.log('   moderator@fintrack.com / Mod@2026#');
   console.log('   user2@fintrack.com / User@2026#');
   console.log('⚠️  Existing data was preserved.');
 }
