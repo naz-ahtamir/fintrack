@@ -117,6 +117,7 @@ Backend/prisma/*.db-journal
 *.sqlite
 *.db
 !database/*.sql
+!backend/prisma/migrations/**/*.sql
 
 # Keep database backup folder but ignore large dumps
 database/*.dump
