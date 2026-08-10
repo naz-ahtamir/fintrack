@@ -83,7 +83,7 @@ export class GoalRepository {
         currentAmount: {
           increment: amount,
         },
-        },
+      },
     });
 
     // Check if goal is completed

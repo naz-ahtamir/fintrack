@@ -761,7 +761,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Emergency Fund\",\n  \"targetAmount\": 50000000,\n  \"targetDate\": \"2027-01-01\",\n  \"priority\": \"HIGH\",\n  \"description\": \"Build emergency fund for 6 months\"\n}",
+              "raw": "{\n  \"title\": \"Emergency Fund\",\n  \"targetAmount\": 50000000,\n  \"targetDate\": \"2027-01-01\",\n  \"priority\": 5,\n  \"description\": \"Build emergency fund for 6 months\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

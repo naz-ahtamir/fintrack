@@ -1,5 +1,5 @@
 // src/repositories/UserRepository.ts
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service'; // <-- Ganti import
 import { User, Prisma } from '../../generated/prisma/client';
 
 export class UserRepository {  
@@ -7,7 +7,7 @@ export class UserRepository {
 
   // Create
   async create(data: Prisma.UserCreateInput): Promise<User> {
-    return this.prisma.user.create({
+    return this.prisma.user.create({ // <-- ganti prisma. jadi this.prisma.
       data: {
         ...data,
         settings: data.settings || {
