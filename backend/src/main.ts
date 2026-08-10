@@ -32,7 +32,7 @@ async function bootstrap() {
 
       // Production: Allow specific domains
       const allowedOrigins = [
-        process.env.FRONTEND_URL, // Set ini di Render environment variables
+        process.env.FRONTEND_URL, 'https://fintrack.naz-ahtamir.site',
       ].filter(Boolean);
 
       if (allowedOrigins.includes(origin)) {
