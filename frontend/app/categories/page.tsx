@@ -43,15 +43,21 @@ export default function CategoriesPage() {
       try {
         setLoading(true);
         
+        console.log('Fetching categories and transactions...');
+        
         // Parallel fetch categories and transactions
         const [categoriesRes, transactionsRes] = await Promise.all([
           api.categories.getAll(),
           api.transactions.getAll(),
         ]);
         
+        console.log('Categories response:', categoriesRes.data);
+        console.log('Transactions response:', transactionsRes.data);
+        
         setCategories(categoriesRes.data);
         setTransactions(transactionsRes.data);
       } catch (error) {
+        console.error('Error fetching data:', error);
         // Silently fail
       } finally {
         setLoading(false);
@@ -60,6 +66,8 @@ export default function CategoriesPage() {
 
     if (token) {
       fetchData();
+    } else {
+      console.log('No token found, skipping fetch');
     }
   }, [token, refreshKey]);
 
