@@ -160,35 +160,46 @@ async function main() {
     { name: 'BNI User2', balance: 800000, type: bankType },
   ]);
 
-  // 4. Categories (untuk demo user)
+  // 4. Categories (untuk semua user)
   console.log('\n🏷️  Categories...');
-  let categoryIds: number[] = [];
-  const existingCats = await prisma.category.findMany({ where: { userId: demoUser.id } });
-  if (existingCats.length === 0) {
-    const created = await prisma.category.createManyAndReturn({
-      data: [
-        { name: 'Salary', type: 'INCOME', color: '#22c55e', userId: demoUser.id },
-        { name: 'Freelance', type: 'INCOME', color: '#3b82f6', userId: demoUser.id },
-        { name: 'Food', type: 'EXPENSE', color: '#ef4444', userId: demoUser.id },
-        { name: 'Transport', type: 'EXPENSE', color: '#f59e0b', userId: demoUser.id },
-        { name: 'Shopping', type: 'EXPENSE', color: '#ec4899', userId: demoUser.id },
-        { name: 'Entertainment', type: 'EXPENSE', color: '#8b5cf6', userId: demoUser.id },
-        { name: 'Utilities', type: 'EXPENSE', color: '#06b6d4', userId: demoUser.id },
-        { name: 'Investment', type: 'INCOME', color: '#8b5cf6', userId: demoUser.id },
-      ],
-    });
-    categoryIds = created.map(c => c.id);
-    console.log('  ✅ Created 8 categories');
-  } else {
-    categoryIds = existingCats.map(c => c.id);
-    console.log(`  ⏭️  Using existing ${categoryIds.length} categories`);
-  }
+  
+  const ensureCategories = async (user: any) => {
+    const existing = await prisma.category.findMany({ where: { userId: user.id } });
+    if (existing.length === 0) {
+      const created = await prisma.category.createManyAndReturn({
+        data: [
+          { name: 'Salary', type: 'INCOME', color: '#22c55e', userId: user.id },
+          { name: 'Freelance', type: 'INCOME', color: '#3b82f6', userId: user.id },
+          { name: 'Food', type: 'EXPENSE', color: '#ef4444', userId: user.id },
+          { name: 'Transport', type: 'EXPENSE', color: '#f59e0b', userId: user.id },
+          { name: 'Shopping', type: 'EXPENSE', color: '#ec4899', userId: user.id },
+          { name: 'Entertainment', type: 'EXPENSE', color: '#8b5cf6', userId: user.id },
+          { name: 'Utilities', type: 'EXPENSE', color: '#06b6d4', userId: user.id },
+          { name: 'Investment', type: 'INCOME', color: '#8b5cf6', userId: user.id },
+        ],
+      });
+      console.log(`  ✅ Created ${created.length} categories for ${user.email}`);
+      return created.map(c => c.id);
+    } else {
+      console.log(`  ⏭️  ${user.email} already has ${existing.length} categories`);
+      return existing.map(c => c.id);
+    }
+  };
+
+  // Create categories for all users
+  await ensureCategories(demoUser);
+  await ensureCategories(admin);
+  await ensureCategories(moderator);
+  await ensureCategories(user2);
 
   // 5. Transaksi untuk semua user (rentang 2025-2026)
   console.log('\n📊 Transactions...');
   const allUsers = [demoUser, admin, moderator, user2];
   for (const user of allUsers) {
     const accounts = await prisma.account.findMany({ where: { userId: user.id } });
+    const categories = await prisma.category.findMany({ where: { userId: user.id } });
+    const categoryIds = categories.map(c => c.id);
+    
     if (accounts.length === 0 || categoryIds.length === 0) {
       console.log(`  ⏭️  Skipping ${user.email} (no accounts or categories)`);
       continue;
