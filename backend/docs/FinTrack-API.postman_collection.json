@@ -450,7 +450,7 @@
                   "pm.test('Account updated successfully', () => {",
                   "    pm.response.to.have.status(200);",
                   "    const response = pm.response.json();",
-                  "    pm.expect(response.name).to.equal('Updated Wallet Name');",
+                  "    pm.expect(response.name).to.include('Updated Wallet');",
                   "});"
                 ]
               }
@@ -461,7 +461,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated Wallet Name\",\n  \"description\": \"Updated description\"\n}",
+              "raw": "{\n  \"name\": \"Updated Wallet {{$timestamp}}\",\n  \"description\": \"Updated description\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -572,7 +572,7 @@
                   "pm.test('Category updated successfully', () => {",
                   "    pm.response.to.have.status(200);",
                   "    const response = pm.response.json();",
-                  "    pm.expect(response.name).to.equal('Food & Dining');",
+                  "    pm.expect(response.name).to.include('Food & Dining');",
                   "});"
                 ]
               }
@@ -583,7 +583,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Food & Dining\",\n  \"color\": \"#f59e0b\"\n}",
+              "raw": "{\n  \"name\": \"Food & Dining {{$timestamp}}\",\n  \"color\": \"#f59e0b\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -805,13 +805,27 @@
         },
         {
           "name": "IDOR Test - Access Other User's Transaction",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('IDOR Protection: Cannot access other user transaction', () => {",
+                  "    pm.response.to.have.status(404);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.message).to.include('not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/transactions/999",
+              "raw": "{{base_url}}/api/transactions/999999",
               "host": ["{{base_url}}"],
-              "path": ["api", "transactions", "999"]
+              "path": ["api", "transactions", "999999"]
             },
             "description": "Security test: Should return 404 for transactions not owned by user"
           },

@@ -70,6 +70,21 @@ export class AccountsService {
       currency: updateAccountDto.currency,
     };
 
+    // Handle type update if provided
+    if (updateAccountDto.type) {
+      const accountType = await this.prisma.accountType.findUnique({
+        where: { name: accountTypeMap[updateAccountDto.type] as any },
+      });
+
+      if (!accountType) {
+        throw new NotFoundException('Account type not found');
+      }
+
+      updateData.accountType = {
+        connect: { id: accountType.id }
+      };
+    }
+
     // Remove undefined fields
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
