@@ -32,7 +32,10 @@ async function bootstrap() {
 
       // Production: Allow specific domains
       const allowedOrigins = [
-        process.env.FRONTEND_URL, 'https://fintrack.naz-ahtamir.site',
+        process.env.FRONTEND_URL,
+        process.env.BACKEND_URL,
+        'https://fintrack.naz-ahtamir.site',
+        'https://fintrack-api-6mz4.onrender.com',
       ].filter(Boolean);
 
       if (allowedOrigins.includes(origin)) {
@@ -42,6 +45,11 @@ async function bootstrap() {
       // Allow all Vercel deployments (*.vercel.app)
       // This is the PERMANENT solution for Vercel
       if (origin.match(/^https:\/\/.*\.vercel\.app$/)) {
+        return callback(null, true);
+      }
+
+      // Allow all Render deployments (*.onrender.com) - needed for Swagger UI
+      if (origin.match(/^https:\/\/.*\.onrender\.com$/)) {
         return callback(null, true);
       }
 
