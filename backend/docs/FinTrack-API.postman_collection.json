@@ -35,6 +35,31 @@
       "key": "user_id",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "account_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "category_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "transaction_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "budget_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "goal_id",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -320,12 +345,29 @@
       "item": [
         {
           "name": "Create Account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('account_id', response.id);",
+                  "    pm.test('Account created successfully', () => {",
+                  "        pm.expect(response.id).to.exist;",
+                  "        pm.expect(response.balance).to.equal(1000000);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Main Wallet\",\n  \"type\": \"CASH\",\n  \"balance\": 1000000,\n  \"currency\": \"IDR\",\n  \"description\": \"My primary cash wallet\"\n}",
+              "raw": "{\n  \"name\": \"Main Wallet {{$timestamp}}\",\n  \"type\": \"CASH\",\n  \"balance\": 1000000,\n  \"currency\": \"IDR\",\n  \"description\": \"My primary cash wallet\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -373,19 +415,47 @@
         },
         {
           "name": "Get Account by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Account found', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.id).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/accounts/1",
+              "raw": "{{base_url}}/api/accounts/{{account_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "accounts", "1"]
+              "path": ["api", "accounts", "{{account_id}}"]
             },
             "description": "Get specific account. Returns 404 if not owned by user (IDOR protection)."
           }
         },
         {
           "name": "Update Account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Account updated successfully', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.name).to.equal('Updated Wallet Name');",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "PATCH",
             "header": [],
@@ -399,9 +469,9 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/api/accounts/1",
+              "raw": "{{base_url}}/api/accounts/{{account_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "accounts", "1"]
+              "path": ["api", "accounts", "{{account_id}}"]
             }
           }
         },
@@ -424,12 +494,29 @@
       "item": [
         {
           "name": "Create Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('category_id', response.id);",
+                  "    pm.test('Category created successfully', () => {",
+                  "        pm.expect(response.id).to.exist;",
+                  "        pm.expect(response.type).to.equal('EXPENSE');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Healthcare & Medical\",\n  \"type\": \"EXPENSE\",\n  \"color\": \"#10b981\",\n  \"icon\": \"💊\"\n}",
+              "raw": "{\n  \"name\": \"Healthcare {{$timestamp}}\",\n  \"type\": \"EXPENSE\",\n  \"color\": \"#10b981\",\n  \"icon\": \"💊\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -477,6 +564,20 @@
         },
         {
           "name": "Update Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Category updated successfully', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.name).to.equal('Food & Dining');",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "PATCH",
             "header": [],
@@ -490,9 +591,9 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/api/categories/1",
+              "raw": "{{base_url}}/api/categories/{{category_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "categories", "1"]
+              "path": ["api", "categories", "{{category_id}}"]
             }
           }
         }
@@ -508,10 +609,14 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Balance increased', () => {",
+                  "if (pm.response.code === 201) {",
                   "    const response = pm.response.json();",
-                  "    pm.expect(response.account.balance).to.be.above(0);",
-                  "});"
+                  "    pm.collectionVariables.set('transaction_id', response.id);",
+                  "    pm.test('Balance increased', () => {",
+                  "        pm.expect(response.account).to.exist;",
+                  "        pm.expect(response.account.balance).to.be.above(0);",
+                  "    });",
+                  "}"
                 ]
               }
             }
@@ -521,7 +626,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"type\": \"INCOME\",\n  \"amount\": 5000000,\n  \"description\": \"Monthly Salary August 2026\",\n  \"date\": \"2026-08-01\",\n  \"accountId\": 1,\n  \"categoryId\": 1\n}",
+              "raw": "{\n  \"type\": \"INCOME\",\n  \"amount\": 5000000,\n  \"description\": \"Monthly Salary August 2026\",\n  \"date\": \"2026-08-01\",\n  \"accountId\": {{account_id}},\n  \"categoryId\": {{category_id}}\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -538,12 +643,26 @@
         },
         {
           "name": "Create Expense Transaction",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Expense created successfully', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.type).to.equal('EXPENSE');",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"type\": \"EXPENSE\",\n  \"amount\": 250000,\n  \"description\": \"Grocery shopping at supermarket\",\n  \"date\": \"2026-08-02\",\n  \"accountId\": 1,\n  \"categoryId\": 3\n}",
+              "raw": "{\n  \"type\": \"EXPENSE\",\n  \"amount\": 250000,\n  \"description\": \"Grocery shopping at supermarket\",\n  \"date\": \"2026-08-02\",\n  \"accountId\": {{account_id}},\n  \"categoryId\": {{category_id}}\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -627,6 +746,18 @@
         },
         {
           "name": "Update Transaction",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Transaction updated successfully', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "PATCH",
             "header": [],
@@ -640,22 +771,34 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/api/transactions/1",
+              "raw": "{{base_url}}/api/transactions/{{transaction_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "transactions", "1"]
+              "path": ["api", "transactions", "{{transaction_id}}"]
             },
             "description": "Update transaction. Balance will be recalculated automatically."
           }
         },
         {
           "name": "Delete Transaction",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Transaction deleted successfully', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/transactions/1",
+              "raw": "{{base_url}}/api/transactions/{{transaction_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "transactions", "1"]
+              "path": ["api", "transactions", "{{transaction_id}}"]
             },
             "description": "Delete transaction. Balance will be reverted automatically."
           }
@@ -689,12 +832,28 @@
       "item": [
         {
           "name": "Create Budget",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('budget_id', response.id);",
+                  "    pm.test('Budget created successfully', () => {",
+                  "        pm.expect(response.id).to.exist;",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"categoryId\": 3,\n  \"amount\": 2000000,\n  \"month\": 8,\n  \"year\": 2026\n}",
+              "raw": "{\n  \"categoryId\": {{category_id}},\n  \"amount\": 2000000,\n  \"month\": 8,\n  \"year\": 2026\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -761,6 +920,23 @@
       "item": [
         {
           "name": "Create Goal",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('goal_id', response.id);",
+                  "    pm.test('Goal created successfully', () => {",
+                  "        pm.expect(response.id).to.exist;",
+                  "        pm.expect(response.targetAmount).to.equal(50000000);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [],
@@ -794,6 +970,18 @@
         },
         {
           "name": "Add Contribution to Goal",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Contribution added successfully', () => {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [],
@@ -807,22 +995,34 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/api/goals/1/contribute",
+              "raw": "{{base_url}}/api/goals/{{goal_id}}/contribute",
               "host": ["{{base_url}}"],
-              "path": ["api", "goals", "1", "contribute"]
+              "path": ["api", "goals", "{{goal_id}}", "contribute"]
             },
             "description": "Add contribution to goal and track progress"
           }
         },
         {
           "name": "Get Goal Progress",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Goal progress retrieved', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/goals/1/progress",
+              "raw": "{{base_url}}/api/goals/{{goal_id}}/progress",
               "host": ["{{base_url}}"],
-              "path": ["api", "goals", "1", "progress"]
+              "path": ["api", "goals", "{{goal_id}}", "progress"]
             }
           }
         }
