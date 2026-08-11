@@ -42,18 +42,19 @@ export default function CategoriesPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
-        console.log('Fetching categories and transactions...');
-        
-        // Parallel fetch categories and transactions
+
+        // Build date range for selected month to limit transactions fetched
+        const startDate = new Date(selectedYear, selectedMonth, 1);
+        const endDate = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59, 999);
+        const startDateStr = startDate.toISOString().split('T')[0];
+        const endDateStr = endDate.toISOString().split('T')[0];
+
+        // Parallel fetch categories and transactions for the selected month
         const [categoriesRes, transactionsRes] = await Promise.all([
           api.categories.getAll(),
-          api.transactions.getAll(),
+          api.transactions.getAll({ startDate: startDateStr, endDate: endDateStr }),
         ]);
-        
-        console.log('Categories response:', categoriesRes.data);
-        console.log('Transactions response:', transactionsRes.data);
-        
+
         setCategories(categoriesRes.data);
         setTransactions(transactionsRes.data);
       } catch (error) {
@@ -66,26 +67,19 @@ export default function CategoriesPage() {
 
     if (token) {
       fetchData();
-    } else {
-      console.log('No token found, skipping fetch');
     }
-  }, [token, refreshKey]);
+  }, [token, refreshKey, selectedMonth, selectedYear]);
 
   // Calculate monthly totals and transaction counts for each category
+  // Transactions are already pre-filtered by month from the backend
   const categoriesWithStats = React.useMemo(() => {
-    const startDate = new Date(selectedYear, selectedMonth, 1);
-    const endDate = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59, 999);
-
     return categories.map(category => {
-      // Filter transactions for this category in selected month
-      const categoryTransactions = transactions.filter(tx => {
-        const txDate = new Date(tx.transactionDate);
-        return tx.categoryId === category.id && 
-               txDate >= startDate && 
-               txDate <= endDate;
-      });
+      // Filter transactions for this category (categoryId match, non-null)
+      const categoryTransactions = transactions.filter(tx =>
+        tx.categoryId != null && tx.categoryId === category.id
+      );
 
-      // Calculate total
+      // Calculate total amount
       const monthlyTotal = categoryTransactions.reduce((sum, tx) => {
         return sum + Number(tx.amount);
       }, 0);
@@ -96,7 +90,7 @@ export default function CategoriesPage() {
         transactionCount: categoryTransactions.length,
       };
     });
-  }, [categories, transactions, selectedMonth, selectedYear]);
+  }, [categories, transactions]);
 
   const incomeCategories = categoriesWithStats.filter(c => c.type === 'INCOME');
   const expenseCategories = categoriesWithStats.filter(c => c.type === 'EXPENSE');
