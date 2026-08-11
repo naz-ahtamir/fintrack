@@ -51,7 +51,7 @@ async function main() {
 
   // 1. Account Types
   console.log('\n📦 Account Types...');
-  const accountTypeNames = ['CASH', 'BANK', 'CREDIT_CARD', 'INVESTMENT'] as const;
+  const accountTypeNames = ['CASH', 'BANK', 'EWALLET', 'CREDIT_CARD', 'INVESTMENT'] as const;
   for (const name of accountTypeNames) {
     const exists = await prisma.accountType.findFirst({ where: { name } });
     if (!exists) {

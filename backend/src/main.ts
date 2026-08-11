@@ -90,7 +90,6 @@ async function bootstrap() {
         description: 'Enter JWT token',
         in: 'header',
       },
-      'JWT-auth',
     )
     .addTag('auth', 'Authentication endpoints')
     .addTag('users', 'User management')
