@@ -44,6 +44,7 @@ export class TransactionsService {
       });
 
       // 2. Update saldo akun
+      let updatedAccount = null;
       if (createTransactionDto.accountId) {
         const account = await prisma.account.findUnique({
           where: { id: createTransactionDto.accountId },
@@ -57,9 +58,10 @@ export class TransactionsService {
         } else if (createTransactionDto.type === TransactionType.EXPENSE) {
           newBalance -= createTransactionDto.amount;
         }
-        await prisma.account.update({
+        updatedAccount = await prisma.account.update({
           where: { id: createTransactionDto.accountId },
           data: { balance: newBalance },
+          include: { accountType: true },
         });
       }
 
@@ -71,9 +73,10 @@ export class TransactionsService {
             where: { id: createTransactionDto.accountId },
           });
           if (!fromAccount) throw new NotFoundException('From account not found');
-          await prisma.account.update({
+          updatedAccount = await prisma.account.update({
             where: { id: createTransactionDto.accountId },
             data: { balance: Number(fromAccount.balance) - createTransactionDto.amount },
+            include: { accountType: true },
           });
         }
         // Tambah ke akun tujuan
@@ -87,7 +90,11 @@ export class TransactionsService {
         });
       }
 
-      return transaction;
+      // Return transaction dengan updated account balance
+      return {
+        ...transaction,
+        account: updatedAccount || transaction.account,
+      };
     });
   }
 
@@ -184,6 +191,7 @@ export class TransactionsService {
       });
 
       // 3. Terapkan efek baru
+      let updatedAccount = null;
       if (existing.accountId) {
         const account = await prisma.account.findUnique({
           where: { id: existing.accountId },
@@ -192,13 +200,17 @@ export class TransactionsService {
         let newBalance = Number(account.balance);
         if (newType === 'INCOME') newBalance += newAmount;
         else if (newType === 'EXPENSE') newBalance -= newAmount;
-        await prisma.account.update({
+        updatedAccount = await prisma.account.update({
           where: { id: existing.accountId },
           data: { balance: newBalance },
+          include: { accountType: true },
         });
       }
 
-      return updated;
+      return {
+        ...updated,
+        account: updatedAccount || updated.account,
+      };
     });
   }
 

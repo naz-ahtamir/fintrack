@@ -18,11 +18,16 @@
   "variable": [
     {
       "key": "base_url",
-      "value": "https://fintrack-backend.adaptable.app",
+      "value": "https://fintrack-api-6mz4.onrender.com",
       "type": "string"
     },
     {
       "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
       "value": "",
       "type": "string"
     },
@@ -45,8 +50,8 @@
                 "exec": [
                   "if (pm.response.code === 201) {",
                   "    const response = pm.response.json();",
-                  "    pm.environment.set('jwt_token', response.token);",
-                  "    pm.environment.set('user_id', response.user.id);",
+                  "    pm.collectionVariables.set('jwt_token', response.token);",
+                  "    pm.collectionVariables.set('user_id', response.user.id);",
                   "    pm.test('Token received', () => {",
                   "        pm.expect(response.token).to.exist;",
                   "    });",
@@ -122,8 +127,8 @@
                 "exec": [
                   "if (pm.response.code === 200) {",
                   "    const response = pm.response.json();",
-                  "    pm.environment.set('jwt_token', response.token);",
-                  "    pm.environment.set('user_id', response.user.id);",
+                  "    pm.collectionVariables.set('jwt_token', response.token);",
+                  "    pm.collectionVariables.set('user_id', response.user.id);",
                   "    pm.test('Login successful', () => {",
                   "        pm.expect(response.token).to.exist;",
                   "        pm.expect(response.user.role).to.exist;",
@@ -178,7 +183,7 @@
                 "exec": [
                   "if (pm.response.code === 200) {",
                   "    const response = pm.response.json();",
-                  "    pm.environment.set('admin_token', response.token);",
+                  "    pm.collectionVariables.set('admin_token', response.token);",
                   "    pm.test('Admin login successful', () => {",
                   "        pm.expect(response.user.role).to.equal('ADMIN');",
                   "    });",
