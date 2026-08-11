@@ -49,6 +49,10 @@ export default function RegisterPage() {
 
       // SIMPAN KE STORE (agar user langsung login)
       setAuth(data.user, data.token);
+      
+      // Set cookie for middleware (expires in 7 days)
+      document.cookie = `auth-token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Strict`;
+      
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed');

@@ -42,6 +42,9 @@ export default function LoginPage() {
       
       // Also save token directly for backward compatibility
       localStorage.setItem('token', token);
+      
+      // Set cookie for middleware (expires in 7 days)
+      document.cookie = `auth-token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Strict`;
 
       // Redirect to dashboard
       router.push('/dashboard');

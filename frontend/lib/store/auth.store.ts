@@ -38,6 +38,11 @@ export const useAuthStore = create<AuthStore>()(
           token: null,
           isAuthenticated: false,
         });
+        
+        // Clear cookie
+        if (typeof document !== 'undefined') {
+          document.cookie = 'auth-token=; path=/; max-age=0';
+        }
       },
 
       setUser: (user: User) => {
