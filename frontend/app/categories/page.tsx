@@ -76,7 +76,7 @@ export default function CategoriesPage() {
     return categories.map(category => {
       // Filter transactions for this category (categoryId match, non-null)
       const categoryTransactions = transactions.filter(tx =>
-        tx.categoryId != null && tx.categoryId === category.id
+        tx.categoryId != null && Number(tx.categoryId) === category.id
       );
 
       // Calculate total amount
