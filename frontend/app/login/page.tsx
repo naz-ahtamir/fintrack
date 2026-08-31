@@ -134,6 +134,26 @@ export default function LoginPage() {
               </p>
             </div>
 
+            {/* Demo Account */}
+            <div className="mb-6 rounded-2xl border border-[#0066ff]/30 bg-[#0066ff]/5 p-4">
+              <p className="text-xs font-semibold text-[#0066ff] uppercase tracking-wide mb-2">
+                Demo Account
+              </p>
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm text-zinc-400 space-y-0.5">
+                  <p><span className="text-zinc-300">Email:</span> demo@fintrack.com</p>
+                  <p><span className="text-zinc-300">Password:</span> Demo@2026#</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ email: 'demo@fintrack.com', password: 'Demo@2026#' })}
+                  className="shrink-0 text-xs font-medium text-[#0066ff] border border-[#0066ff]/40 rounded-lg px-3 py-1.5 hover:bg-[#0066ff]/10 transition-colors"
+                >
+                  Use Demo
+                </button>
+              </div>
+            </div>
+
             {error && (
               <Alert variant="error" className="mb-6" onClose={() => setError('')}>
                 {error}
